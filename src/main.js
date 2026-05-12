@@ -1013,21 +1013,31 @@ function focusDashboardSession(sessionId, options = {}) {
   if (!sessionId) return;
   const requestSource = options.requestSource || "dashboard";
   const session = sessions.get(String(sessionId));
-  if (session && session.sourcePid && session.platform !== "webui") {
-    focusTerminalWindow({
-      sourcePid: session.sourcePid,
-      cwd: session.cwd,
-      editor: session.editor,
-      pidChain: session.pidChain,
-      sessionId: String(sessionId),
-      agentId: session.agentId,
-      requestSource,
-    });
-  } else if (!session) {
+  if (!session) {
     focusLog(`focus result branch=none reason=session-not-found source=${requestSource} sid=${String(sessionId)}`);
-  } else {
-    focusLog(`focus result branch=none reason=no-source-pid source=${requestSource} sid=${String(sessionId)}`);
+    return;
   }
+  if (session.host) {
+    focusLog(`focus result branch=none reason=remote-session source=${requestSource} sid=${String(sessionId)} host=${session.host}`);
+    return;
+  }
+  if (session.platform === "webui") {
+    focusLog(`focus result branch=none reason=webui-platform source=${requestSource} sid=${String(sessionId)}`);
+    return;
+  }
+  if (!session.sourcePid) {
+    focusLog(`focus result branch=none reason=no-source-pid source=${requestSource} sid=${String(sessionId)}`);
+    return;
+  }
+  focusTerminalWindow({
+    sourcePid: session.sourcePid,
+    cwd: session.cwd,
+    editor: session.editor,
+    pidChain: session.pidChain,
+    sessionId: String(sessionId),
+    agentId: session.agentId,
+    requestSource,
+  });
 }
 
 function hideDashboardSession(sessionId) {

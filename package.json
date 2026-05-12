@@ -44,6 +44,7 @@
   "build": {
     "appId": "com.clawd.on-desk",
     "productName": "Clawd on Desk",
+    "afterPack": "scripts/after-pack.js",
     "protocols": [
       {
         "name": "Clawd Import Protocol",
@@ -125,6 +126,7 @@
     ],
     "asarUnpack": [
       "assets/svg/**/*",
+      "assets/icons/*.png",
       "hooks/**/*",
       "extensions/**/*",
       "themes/**/*"
@@ -144,7 +146,7 @@
     ]
   },
   "devDependencies": {
-    "electron": "^41.0.2",
+    "electron": "^41.5.1",
     "electron-builder": "^26.8.1"
   },
   "dependencies": {
