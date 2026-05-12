@@ -29,10 +29,15 @@ function getSettingsWindowIconPath({
   const candidates = [];
 
   if (isPackaged) {
+    // Try real filesystem paths first (extraResources, asarUnpack) before
+    // falling back to paths inside the asar. BrowserWindow's native code
+    // cannot read files from within an asar archive, so an asar path that
+    // passes existsSync (Electron's fs transparently resolves it) would
+    // still fail when the OS tries to load it as the window icon.
     candidates.push(
+      path.join(resourcesPath || "", "icon.ico"),
       path.join(resourcesPath || "", "app.asar.unpacked", "assets", "icons", "256x256.png"),
-      path.join(resourcesPath || "", "app.asar", "assets", "icons", "256x256.png"),
-      path.join(resourcesPath || "", "icon.ico")
+      path.join(resourcesPath || "", "app.asar", "assets", "icons", "256x256.png")
     );
   } else {
     candidates.push(

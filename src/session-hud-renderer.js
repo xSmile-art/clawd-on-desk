@@ -2,6 +2,18 @@
 
 const HUD_MAX_EXPANDED_ROWS = 3;
 
+const AGENT_LABELS = {
+  "claude-code": "Claude Code",
+  codex: "Codex",
+  "copilot-cli": "Copilot",
+  "cursor-agent": "Cursor Agent",
+  "gemini-cli": "Gemini",
+  "kiro-cli": "Kiro",
+  "kimi-cli": "Kimi",
+  opencode: "opencode",
+  codebuddy: "CodeBuddy",
+};
+
 let snapshot = { sessions: [], orderedIds: [], hudTotalNonIdle: 0, hudLastTitle: null, hudShowElapsed: true, hudAutoHide: false, hudPinned: false };
 let i18nPayload = { lang: "en", translations: {} };
 
@@ -17,6 +29,18 @@ function isHudSession(session) {
 function t(key) {
   const dict = i18nPayload && i18nPayload.translations ? i18nPayload.translations : {};
   return dict[key] || key;
+}
+
+function createText(tag, className, text) {
+  const el = document.createElement(tag);
+  if (className) el.className = className;
+  el.textContent = text || "";
+  return el;
+}
+
+function agentFallback(agentId) {
+  const label = (AGENT_LABELS[agentId] || agentId || "").trim();
+  return label ? label.slice(0, 2).toUpperCase() : "?";
 }
 
 function formatElapsed(ms) {
@@ -97,7 +121,14 @@ function createRowForSession(session, now) {
     img.className = "agent-icon";
     img.alt = "";
     img.src = session.iconUrl;
+    img.addEventListener("error", () => {
+      const fallback = createText("span", "agent-fallback", agentFallback(session.agentId));
+      img.replaceWith(fallback);
+    }, { once: true });
     left.appendChild(img);
+  } else {
+    const fallback = createText("span", "agent-fallback", agentFallback(session.agentId));
+    left.appendChild(fallback);
   }
 
   const title = document.createElement("span");
@@ -128,11 +159,20 @@ function createRowForSession(session, now) {
   row.appendChild(left);
   if (hasRightContent) row.appendChild(right);
 
-  row.addEventListener("click", () => {
-    unreadSessions.delete(session.id);
-    render();
-    window.sessionHudAPI.focusSession(session.id);
-  });
+  const canFocus = !!(session.sourcePid && !session.host);
+  if (canFocus) {
+    row.addEventListener("click", () => {
+      unreadSessions.delete(session.id);
+      render();
+      window.sessionHudAPI.focusSession(session.id);
+    });
+  } else {
+    row.style.cursor = "default";
+    row.addEventListener("click", () => {
+      unreadSessions.delete(session.id);
+      render();
+    });
+  }
 
   return row;
 }
