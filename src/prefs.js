@@ -25,11 +25,12 @@ const { normalizeRemoteSsh, getDefaults: getRemoteSshDefaults } = require("./rem
 const {
   NOTIFICATION_DEFAULT_SECONDS,
   UPDATE_DEFAULT_SECONDS,
+  PERMISSION_DEFAULT_SECONDS,
   MAX_AUTO_CLOSE_SECONDS,
 } = require("./bubble-policy");
 const { normalizeSessionAliases } = require("./session-alias");
 
-const CURRENT_VERSION = 2;
+const CURRENT_VERSION = 3;
 
 // ── Schema ──
 // Each field has: type, default OR defaultFactory, optional enum/normalize/validate.
@@ -96,6 +97,11 @@ const SCHEMA = {
   notificationBubbleAutoCloseSeconds: {
     type: "number",
     default: NOTIFICATION_DEFAULT_SECONDS,
+    validate: (v) => Number.isInteger(v) && v >= 0 && v <= MAX_AUTO_CLOSE_SECONDS,
+  },
+  permissionBubbleAutoCloseSeconds: {
+    type: "number",
+    default: PERMISSION_DEFAULT_SECONDS,
     validate: (v) => Number.isInteger(v) && v >= 0 && v <= MAX_AUTO_CLOSE_SECONDS,
   },
   updateBubbleAutoCloseSeconds: {
@@ -225,6 +231,9 @@ function validate(raw) {
 //   no `version` key — that's the v0 marker.
 // v1 → v2: no structural migration. Version 2 is the first schema version that
 //   includes Hermes in the built-in agent defaults.
+// v2 → v3: raise passive notification bubble default from 3s to 6s. Users
+//   who explicitly chose 3s in v2 are indistinguishable from defaulted-3 and
+//   are migrated too; other non-default values are preserved.
 function migrate(raw) {
   if (!raw || typeof raw !== "object") return raw;
   const out = { ...raw };
@@ -274,6 +283,12 @@ function migrate(raw) {
         : true,
     };
     out.version = 2;
+  }
+  if (out.version < 3) {
+    if (out.notificationBubbleAutoCloseSeconds === 3) {
+      out.notificationBubbleAutoCloseSeconds = NOTIFICATION_DEFAULT_SECONDS;
+    }
+    out.version = 3;
   }
   if ((typeof out.version === "number" ? out.version : 0) < CURRENT_VERSION) {
     out.version = CURRENT_VERSION;
